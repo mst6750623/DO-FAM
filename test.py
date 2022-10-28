@@ -1,31 +1,23 @@
 import os
 import numpy as np
 import torch
-
-from PIL import Image
-from torch.autograd import grad
-from torchvision import utils
-import sys
 import glob
-
-sys.path.append(".")
-sys.path.append("..")
-
-from lattrans_hyperstyle.utils.functions import *
-from lattrans_hyperstyle.nets import *
 import argparse
 
-from lattrans_hyperstyle.hyperstyle.models.stylegan2.model import Generator
-from lattrans_hyperstyle.pixel2style2pixel.models.psp import get_keys
-from DOLLnet import DOLL
+from torch.autograd import grad
+from torchvision import utils
+from hyperstyle.models.stylegan2.model import Generator
+from hyperstyle.models.encoders.psp import get_keys
+from data_utils import *
+from nets import *
 from tqdm import tqdm
+from configs.path_config import model_paths, ckpt_paths, data_paths
 
 
 def main(opts):
     with torch.no_grad():
         device = 'cuda'
-        DOLLnet = DOLL(img_size=256, style_dim=9216,
-                       max_conv_dim=512).to(device)
+        DOLLnet = DOLL(style_dim=9216, ).to(device)
         state_dict = torch.load(opts.DOLL_model_path)
         '''state_dict = torch.load(
             '/home/stma/workspace/lattrans_hyperstyle/logs/l2m/l2m_Eyeglasses.pth.tar'
@@ -76,9 +68,7 @@ def main(opts):
                                    input_is_latent=True,
                                    randomize_noise=False,
                                    weights_deltas=weights_deltas)
-                #to cpu to prevent the CUDA out of memory error
-                x_0 = x_0.to('cpu')
-                res = x_0
+                res = x_0.data
             for coeff in np.arange(opts.coeff_min, opts.coeff_max, opts.step):
                 #print(coeff)
                 w_1 = w_unrelated + w_related + coeff * (w_related_transform -
@@ -102,56 +92,34 @@ def main(opts):
 
 
 if __name__ == '__main__':
-    '''torch.backends.cudnn.enabled = True
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
-    torch.autograd.set_detect_anomaly(True)
-    Image.MAX_IMAGE_PIXELS = None'''
     device = torch.device('cuda')
-
     parser = argparse.ArgumentParser()
     # parser.add_argument('--latent_path', type=str, default='./data/celebahq_dlatents_psp.npy', help='dataset path')
-    parser.add_argument(
-        '--test_latent_path',
-        type=str,
-        default='/mnt/pami23/yfyuan/EXP/LATENT/hyperstyle/celeba_hq_test/',
-        help='test dataset path')
-    parser.add_argument(
-        '--test_weights_delta_path',
-        type=str,
-        default=
-        '/mnt/pami23/yfyuan/EXP/TEST_hyperstyle_rec_1024_save_weight/weight_deltas/',
-        help='test weights delta path')
+    parser.add_argument('--test_latent_path',
+                        type=str,
+                        default=data_paths['test_latent'],
+                        help='test dataset path')
+    parser.add_argument('--test_weights_delta_path',
+                        type=str,
+                        default=data_paths['test_weights_delta'],
+                        help='test weights delta path')
     # parser.add_argument('--label_file', type=str, default='./data/celebahq_anno.npy', help='label file path')
-    parser.add_argument(
-        '--label_file',
-        type=str,
-        default='/home/stma/workspace/VR-FAM/CelebAMask_anno_sorted.npy',
-        help='label file path')
-    parser.add_argument(
-        '--stylegan_model_path',
-        type=str,
-        default=
-        '/mnt/pami23/yfyuan/PRETRAIN_MODEL/HyperStyle/hyperstyle_ffhq.pt',
-        help='stylegan model path')
-    parser.add_argument(
-        '--DOLL_model_path',
-        type=str,
-        default=
-        '/home/stma/workspace/lattrans_hyperstyle/logs/l2m/l2m_Eyeglasses.pth.tar',
-        help='stylegan model path')
-    parser.add_argument(
-        '--classifier_model_path',
-        type=str,
-        default=
-        '/home/stma/workspace/yyf-latent-transformer/pretraining/checkpoint/001/latent_classifier_epoch_50.pth',
-        help='pretrained attribute classifier')
-    parser.add_argument(
-        '--save_image_path',
-        type=str,
-        default=
-        '/home/stma/workspace/lattrans_hyperstyle/l2m/inference/woortho/',
-        help='validate save image path')
+    parser.add_argument('--label_file',
+                        type=str,
+                        default=data_paths['label_file'],
+                        help='label file path')
+    parser.add_argument('--stylegan_model_path',
+                        type=str,
+                        default=ckpt_paths['hyperstyle'],
+                        help='stylegan model path')
+    parser.add_argument('--DOLL_model_path',
+                        type=str,
+                        default=model_paths['Eyeglasses'],
+                        help='stylegan model path')
+    parser.add_argument('--save_image_path',
+                        type=str,
+                        default='./logs/',
+                        help='validate save image path')
     parser.add_argument('--coeff_min',
                         type=float,
                         default=1.3,
@@ -167,10 +135,6 @@ if __name__ == '__main__':
     parser.add_argument('--no_origin',
                         action='store_true',
                         help='decide only output editing')
-
-    parser.add_argument('--reverse',
-                        action='store_true',
-                        help='decide whether use reverse model or not')
     opts = parser.parse_args()
 
     main(opts)

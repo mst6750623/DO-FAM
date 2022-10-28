@@ -6,8 +6,9 @@ import argparse
 import numpy as np
 import torch.utils.data as data
 from trainer import Trainer
-from lattrans_hyperstyle.datasets import LatentDataset
+from dataset import LatentDataset
 from tqdm import tqdm
+from configs.path_config import ckpt_paths, data_paths
 
 
 def main(opts):
@@ -132,41 +133,30 @@ if __name__ == '__main__':
                         help='Path to the config file.')
     # parser.add_argument('--latent_path', type=str, default='./data/celebahq_dlatents_psp.npy', help='dataset path')
 
-    parser.add_argument(
-        '--latent_path',
-        type=str,
-        default=
-        #'/mnt/pami23/yfyuan/EXP/LATENT/hyperstyle/celeba_hq_all/latents.npy',
-        '/mnt/pami23/stma/EXP/hyperstyle/hyperstyle_latents.pt',
-        help='dataset path')
-    parser.add_argument(
-        '--test_latent_path',
-        type=str,
-        default='/mnt/pami23/yfyuan/EXP/LATENT/hyperstyle/celeba_hq_test/',
-        help='test dataset path')
-    parser.add_argument(
-        '--test_weights_delta_path',
-        type=str,
-        default=
-        '/mnt/pami23/yfyuan/EXP/TEST_hyperstyle_rec_1024_save_weight/weight_deltas/',
-        help='test weights delta path')
-    parser.add_argument(
-        '--label_file',
-        type=str,
-        default='/home/stma/workspace/VR-FAM/CelebAMask_anno_sorted.npy',
-        help='label file path')
-    parser.add_argument(
-        '--stylegan_model_path',
-        type=str,
-        default=
-        '/mnt/pami23/yfyuan/PRETRAIN_MODEL/HyperStyle/hyperstyle_ffhq.pt',
-        help='stylegan model path')
-    parser.add_argument(
-        '--classifier_model_path',
-        type=str,
-        default=
-        '/home/stma/workspace/yyf-latent-transformer/pretraining/checkpoint/001/latent_classifier_epoch_50.pth',
-        help='pretrained attribute classifier')
+    parser.add_argument('--latent_path',
+                        type=str,
+                        default=data_paths['train_latent'],
+                        help='dataset path')
+    parser.add_argument('--test_latent_path',
+                        type=str,
+                        default=data_paths['test_latent'],
+                        help='test dataset path')
+    parser.add_argument('--test_weights_delta_path',
+                        type=str,
+                        default=data_paths['test_weights_delta'],
+                        help='test weights delta path')
+    parser.add_argument('--label_file',
+                        type=str,
+                        default=data_paths['label_file'],
+                        help='label file path')
+    parser.add_argument('--stylegan_model_path',
+                        type=str,
+                        default=ckpt_paths['hyperstyle'],
+                        help='stylegan model path')
+    parser.add_argument('--classifier_model_path',
+                        type=str,
+                        default=ckpt_paths['classifier'],
+                        help='pretrained attribute classifier')
     parser.add_argument('--log_path',
                         type=str,
                         default='logs/',

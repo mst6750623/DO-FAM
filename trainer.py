@@ -16,11 +16,10 @@ sys.path.append("..")
 from PIL import Image
 from torchvision import utils
 from data_utils import *
-from lattrans_hyperstyle.nets import *
 
 from hyperstyle.models.stylegan2.model import Generator
 from hyperstyle.models.encoders.psp import get_keys
-from DOLLnet import DOLL
+from nets import *
 
 
 class Trainer(nn.Module):
@@ -238,14 +237,6 @@ class Trainer(nn.Module):
                                         input_is_latent=True,
                                         randomize_noise=False,
                                         weights_deltas=weights_deltas)
-            '''self.x_unrelated, _ = self.StyleGAN([w_unrelated.view(w.size())],
-                                                input_is_latent=True,
-                                                randomize_noise=False,
-                                                weights_deltas=weights_deltas)
-            self.x_related, _ = self.StyleGAN([w_related.view(w.size())],
-                                            input_is_latent=True,
-                                            randomize_noise=False,
-                                            weights_deltas=weights_deltas)'''
             self.x_1, _ = self.StyleGAN([w_1],
                                         input_is_latent=True,
                                         randomize_noise=False,

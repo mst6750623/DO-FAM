@@ -50,6 +50,39 @@ class ImageDataset(data.Dataset):
         return from_image, to_image
 
 
+class LatentDataset(data.Dataset):
+
+    def __init__(self, latent_dir, label_dir, training_set=True):
+        postfix = os.path.splitext(latent_dir)[1]
+        if postfix == '.npy':
+            self.dlatents = np.load(latent_dir)
+        elif postfix == '.pt':
+            self.dlatents = torch.load(latent_dir)
+        self.labels = np.load(label_dir)
+
+        #无validate
+        ''' train_len = int(0.9*len(labels))
+        if training_set:
+            self.dlatents = dlatents[:train_len] 
+            self.labels = labels[:train_len]
+            #self.process_score()
+        else:
+            self.dlatents = dlatents[train_len:]
+            self.labels = labels[train_len:]'''
+
+        self.length = self.dlatents.shape[0]
+        print(self.length)
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        dlatent = torch.tensor(self.dlatents[idx]).clone().detach()
+        lbl = torch.tensor(self.labels[idx])
+
+        return dlatent, lbl
+
+
 class TestDataset(data.Dataset):
 
     def __init__(
