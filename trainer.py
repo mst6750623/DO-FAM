@@ -20,7 +20,7 @@ from lattrans_hyperstyle.nets import *
 
 from hyperstyle.models.stylegan2.model import Generator
 from hyperstyle.models.encoders.psp import get_keys
-from DOLLnet import L2MTransformer
+from DOLLnet import DOLL
 
 
 class Trainer(nn.Module):
@@ -37,10 +37,8 @@ class Trainer(nn.Module):
 
         # Networks
 
-        #L2M Transformer
-        self.l2m = L2MTransformer(img_size=256,
-                                  style_dim=9216,
-                                  max_conv_dim=512)
+        #DOLL module
+        self.DOLL = DOLL(img_size=256, style_dim=9216, max_conv_dim=512)
         if self.opts.extra_init:
             self.init_params()
         # Latent Classifier
@@ -55,8 +53,7 @@ class Trainer(nn.Module):
         self.corr_ma = None
 
         # Optimizers
-        #self.params = list(self.T_net.parameters())
-        self.params = list(self.l2m.parameters())
+        self.params = list(self.DOLL.parameters())
         self.optimizer = torch.optim.Adam(self.params,
                                           lr=config['lr'],
                                           betas=(config['beta_1'],
@@ -68,7 +65,7 @@ class Trainer(nn.Module):
             gamma=config['gamma'])
 
     def init_params(self):
-        for param in self.l2m.parameters():
+        for param in self.DOLL.parameters():
             if isinstance(param, nn.Conv2d):
                 nn.init.xavier_uniform_(param.weight.data)
                 nn.init.constant_(param.bias.data, 0.1)
@@ -82,12 +79,8 @@ class Trainer(nn.Module):
     def initialize(self, stylegan_model_path, classifier_model_path):
         state_dict = torch.load(stylegan_model_path, map_location='cpu')
         # style transformer
-        if stylegan_model_path == '/mnt/pami23/yfyuan/PRETRAIN_MODEL/styletrans/style_transformer_ffhq.pt':
-            self.StyleGAN.load_state_dict(get_keys(state_dict, 'decoder'),
-                                          strict=True)
-        else:
-            self.StyleGAN.load_state_dict(get_keys(state_dict, 'decoder'),
-                                          strict=True)
+        self.StyleGAN.load_state_dict(get_keys(state_dict, 'decoder'),
+                                      strict=True)
         self.StyleGAN.eval()
         self.Latent_Classifier.load_state_dict(
             torch.load(classifier_model_path), strict=False)
@@ -120,7 +113,7 @@ class Trainer(nn.Module):
             target = torch.zeros(x.size()).type_as(x)
         return nn.MSELoss()(x, target)
 
-    def orthogonal_loss(self, w, w_unrelated, w_related, w_related_transform):
+    def ort_loss(self, w, w_unrelated, w_related, w_related_transform):
         loss_1 = torch.mm(w_unrelated, w_related.transpose(0, 1))
         loss_1 = torch.abs(loss_1)
         loss_2 = torch.mm(w_unrelated, w_related_transform.transpose(0, 1))
@@ -154,9 +147,9 @@ class Trainer(nn.Module):
         target_prob = torch.clamp(attr_prob_0 + coeff, 0, 1).round()
         if 'alpha' in self.config and not self.config['alpha']:
             coeff = 2 * target_prob.type_as(attr_prob_0) - 1
-            # Apply latent transformation
-        #self.w_1 = self.T_net(self.w_0.view(w.size(0), -1), coeff)
-        _, w_unrelated, w_related, w_related_transform = self.l2m(
+
+        # Apply latent transformation
+        _, w_unrelated, w_related, w_related_transform = self.DOLL(
             self.w_0.view(w.size(0), -1))
 
         coeff = coeff.reshape(w.size(0), -1)
@@ -167,18 +160,18 @@ class Trainer(nn.Module):
         predict_label_logits_1 = self.Latent_Classifier(
             self.w_1.view(w.size(0), -1))
 
-        # cls loss
+        # re loss
         T_coeff = target_prob.size(0) / (target_prob.sum(0) + 1e-8)
         F_coeff = target_prob.size(0) / (target_prob.size(0) -
                                          target_prob.sum(0) + 1e-8)
         mask_prob = T_coeff.float() * target_prob + F_coeff.float() * (
             1 - target_prob)
-        self.loss_cls = self.BCEloss(predict_label_logits_1[:, self.attr_num],
-                                     target_prob,
-                                     reduction='none') * mask_prob
-        self.loss_cls = self.loss_cls.mean()
+        self.loss_re = self.BCEloss(predict_label_logits_1[:, self.attr_num],
+                                    target_prob,
+                                    reduction='none') * mask_prob
+        self.loss_re = self.loss_re.mean()
 
-        # attr loss
+        # un loss
         threshold_val = 1 if 'corr_threshold' not in self.config else self.config[
             'corr_threshold']
         mask = torch.tensor(
@@ -186,38 +179,25 @@ class Trainer(nn.Module):
                 self.attr_num,
                 threshold=threshold_val)).type_as(predict_label_logits_0)
         mask = mask.repeat(predict_label_logits_0.size(0), 1)
-        self.loss_attr = self.MSEloss(predict_label_logits_1 * mask,
-                                      predict_label_logits_0 * mask)
+        self.loss_un = self.MSEloss(predict_label_logits_1 * mask,
+                                    predict_label_logits_0 * mask)
 
-        lambda_rec, lambda_cls, lambda_attr, lambda_orthogonal,lambda_related = self.config['lambda']['rec'], self.config['lambda']['cls'], \
-                                                         self.config['lambda']['attr'], self.config['lambda']['orthogonal'],self.config['lambda']['related']
+        lambda_reg, lambda_re, lambda_un, lambda_ort = self.config['lambda']['reg'], self.config['lambda']['re'], \
+                                                         self.config['lambda']['un'], self.config['lambda']['ort']
 
-        self.loss = lambda_cls * self.loss_cls + lambda_attr * self.loss_attr
-        # added orthogonal loss
-        if lambda_orthogonal > 0:
-            self.loss_orthogonal = self.orthogonal_loss(
-                w, w_unrelated, w_related, w_related_transform)
-            self.loss += lambda_orthogonal * self.loss_orthogonal
-        #print('loss_orthogonal', self.loss_orthogonal)
-
-        # related loss
-        if lambda_related > 0:
-            predict_label_latent_related = self.Latent_Classifier(
-                w_related.view(w.size(0), -1))
-            source_prob = torch.clamp(attr_prob_0, 0, 1).round()
-            self.loss_related = self.BCEloss(
-                predict_label_latent_related[:, self.attr_num],
-                source_prob,
-                reduction='none')
-            self.loss_related = self.loss_related.mean()
-            self.loss += lambda_related * self.loss_related
-        # Latent code rec
-        if lambda_rec > 0:
-            self.loss_rec = self.MSEloss(self.w_1, self.w_0)
-            self.loss += lambda_rec * self.loss_rec
+        self.loss = lambda_re * self.loss_re + lambda_un * self.loss_un
+        # ort loss
+        if lambda_ort > 0:
+            self.loss_ort = self.ort_loss(w, w_unrelated, w_related,
+                                          w_related_transform)
+            self.loss += lambda_ort * self.loss_ort
+        # Latent reg loss
+        if lambda_reg > 0:
+            self.loss_reg = self.MSEloss(self.w_1, self.w_0)
+            self.loss += lambda_reg * self.loss_reg
         # identity loss: to be add
 
-        # Total loss
+        # total loss
         return self.loss
 
     def get_image_training(self, w, w_1, weights_deltas):
@@ -246,8 +226,8 @@ class Trainer(nn.Module):
                 coeff = 2 * target_prob.type_as(attr_prob_0) - 1
             print('get image,origin label:', attr_prob_0, 'coeff:', coeff)
             #coeff = 5 * coeff
-            #w_1 = self.T_net(w.view(w.size(0), -1), coeff)
-            _, w_unrelated, w_related, w_related_transform = self.l2m(
+
+            _, w_unrelated, w_related, w_related_transform = self.DOLL(
                 w.view(w.size(0), -1))
             w_1 = w_unrelated + w_related + coeff * (w_related_transform -
                                                      w_related)
@@ -290,9 +270,9 @@ class Trainer(nn.Module):
         Image.fromarray(modify_img).convert('RGB').save(modify_name)
 
     def log_loss(self, n_iter):
-        print('cls loss:', self.loss_cls.item(), ',attr loss:',
-              self.loss_attr.item(), ',rec loss:', self.loss_rec.item(),
-              ',related loss:', self.loss_related.item(), ',total loss:',
+        print('ort loss:', self.loss_ort.item(), 're loss:',
+              self.loss_re.item(), ',un loss:', self.loss_un.item(),
+              ',reg loss:', self.loss_reg.item(), ',total loss:',
               self.loss.item())
 
     def save_image(self, log_dir, n_iter):
@@ -303,13 +283,13 @@ class Trainer(nn.Module):
             log_dir + 'iter' + str(n_iter + 1) + '_img_modify.jpg')
 
     def save_model(self, log_dir):
-        torch.save(self.l2m.state_dict(),
-                   log_dir + '/l2m_' + str(self.attr) + '.pth.tar')
+        torch.save(self.DOLL.state_dict(),
+                   log_dir + '/DOLL_' + str(self.attr) + '.pth.tar')
 
     def save_checkpoint(self, n_epoch, log_dir):
         checkpoint_state = {
             'n_epoch': n_epoch,
-            'l2m_state_dict': self.l2m.state_dict(),
+            'DOLL_state_dict': self.DOLL.state_dict(),
             'opt_state_dict': self.optimizer.state_dict(),
             'scheduler_state_dict': self.scheduler.state_dict()
         }
@@ -322,7 +302,7 @@ class Trainer(nn.Module):
 
     def load_checkpoint(self, checkpoint_path):
         state_dict = torch.load(checkpoint_path)
-        self.T_net.load_state_dict(state_dict['T_net_state_dict'])
+        self.DOLL.load_state_dict(state_dict['DOLL_state_dict'])
         self.optimizer.load_state_dict(state_dict['opt_state_dict'])
         self.scheduler.load_state_dict(state_dict['scheduler_state_dict'])
         return state_dict['n_epoch'] + 1

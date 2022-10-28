@@ -5,10 +5,13 @@ https://github.com/NVIDIA/pix2pixHD/blob/master/data/image_folder.py
 import os
 import torch
 import numpy as np
+import torch.nn.functional as F
+from torchvision import transforms
 from PIL import Image
+
 IMG_EXTENSIONS = [
-    '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.tiff'
+    '.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp',
+    '.BMP', '.tiff'
 ]
 
 
@@ -47,11 +50,33 @@ def clip(var):
     var = var * 255
     return var
 
+
 def transpose_clip_image(var):
     var = var.cpu().detach().transpose(0, 2).transpose(0, 1).numpy()
     return clip(var)
+
 
 def tensor2im(var):
     # var shape: (3, H, W)
     img = transpose_clip_image(var)
     return Image.fromarray(img.astype('uint8'))
+
+
+def img_to_tensor(x):
+    out = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])(x)
+    return out
+
+
+def downscale(x, scale_times=1):
+    for i in range(scale_times):
+        x = F.interpolate(x, scale_factor=0.5, mode='bilinear')
+    return x
+
+
+def upscale(x, scale_times=1):
+    for i in range(scale_times):
+        x = F.interpolate(x, scale_factor=2, mode='bilinear')
+    return x

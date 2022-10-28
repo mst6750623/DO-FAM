@@ -10,10 +10,10 @@ sys.path.append("..")
 from lattrans_hyperstyle.nets import F_mapping
 
 
-class L2MTransformer(nn.Module):
+class DOLL(nn.Module):
 
     def __init__(self, img_size=256, style_dim=9216, max_conv_dim=512):
-        super(L2MTransformer, self).__init__()
+        super(DOLL, self).__init__()
         self.decomposer = nn.Sequential(nn.Linear(style_dim, style_dim),
                                         nn.ReLU(),
                                         nn.Linear(style_dim, style_dim),
@@ -32,10 +32,10 @@ class L2MTransformer(nn.Module):
         return latent, z_unrelated, z_related, z_related_transform
 
 
-class L2MTransformerResidual(nn.Module):
+class DOLLResidual(nn.Module):
 
     def __init__(self, img_size=256, style_dim=9216, max_conv_dim=512):
-        super(L2MTransformerResidual, self).__init__()
+        super(DOLLResidual, self).__init__()
         self.decomposer = nn.Sequential(nn.Linear(style_dim, style_dim),
                                         nn.ReLU(),
                                         nn.Linear(style_dim, style_dim),

@@ -32,9 +32,8 @@ ir_se50_path: '/mnt/pami23/stma/pretrained_models/model_ir_se50.pth'
 # Loss weight
 corr_threshold: 1
 lambda:
-  cls: 1
-  rec: 0
-  attr: 1
+  re: 1
+  reg: 0
+  un: 1
   id: 0
-  orthogonal: 1
-  related: 0
+  ort: 1

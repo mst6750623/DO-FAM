@@ -13,25 +13,24 @@ sys.path.append("..")
 
 from lattrans_hyperstyle.utils.functions import *
 from lattrans_hyperstyle.nets import *
-#from lattrans_hyperstyle.e4e.utils.common import *
 import argparse
 
 from lattrans_hyperstyle.hyperstyle.models.stylegan2.model import Generator
 from lattrans_hyperstyle.pixel2style2pixel.models.psp import get_keys
-from .my_l2mnet import L2MTransformer
+from DOLLnet import DOLL
 from tqdm import tqdm
 
 
 def main(opts):
     with torch.no_grad():
         device = 'cuda'
-        l2m = L2MTransformer(img_size=256, style_dim=9216,
-                             max_conv_dim=512).to(device)
-        state_dict = torch.load(opts.l2m_model_path)
+        DOLLnet = DOLL(img_size=256, style_dim=9216,
+                       max_conv_dim=512).to(device)
+        state_dict = torch.load(opts.DOLL_model_path)
         '''state_dict = torch.load(
             '/home/stma/workspace/lattrans_hyperstyle/logs/l2m/l2m_Eyeglasses.pth.tar'
         )'''
-        l2m.load_state_dict(state_dict)
+        DOLLnet.load_state_dict(state_dict)
         generator = Generator(1024, 512, 8).to(device)
         generator_state_dict = torch.load(opts.stylegan_model_path,
                                           map_location='cpu')
@@ -69,7 +68,7 @@ def main(opts):
             sample_deltas = [
                 d if d is not None else None for d in weights_deltas
             ]
-            _, w_unrelated, w_related, w_related_transform = l2m(
+            _, w_unrelated, w_related, w_related_transform = DOLLnet(
                 w.view(w.size(0), -1))
 
             if not opts.no_origin:
@@ -136,7 +135,7 @@ if __name__ == '__main__':
         '/mnt/pami23/yfyuan/PRETRAIN_MODEL/HyperStyle/hyperstyle_ffhq.pt',
         help='stylegan model path')
     parser.add_argument(
-        '--l2m_model_path',
+        '--DOLL_model_path',
         type=str,
         default=
         '/home/stma/workspace/lattrans_hyperstyle/logs/l2m/l2m_Eyeglasses.pth.tar',
