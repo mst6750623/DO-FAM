@@ -2,7 +2,10 @@ ckpt_paths = {
     'hyperstyle':
     '/mnt/pami23/yfyuan/PRETRAIN_MODEL/HyperStyle/hyperstyle_ffhq.pt',
     'classifier':
-    '/home/stma/workspace/yyf-latent-transformer/pretraining/checkpoint/001/latent_classifier_epoch_50.pth'
+    '/home/stma/workspace/yyf-latent-transformer/pretraining/checkpoint/001/latent_classifier_epoch_50.pth',
+    # WEncoders for training on various domains
+    'faces_w_encoder':
+    '/mnt/pami23/yfyuan/PRETRAIN_MODEL/HyperStyle/faces_w_encoder.pt',
 }
 model_paths = {
     'Eyeglasses':
@@ -12,7 +15,7 @@ model_paths = {
     'Smiling':
     '/home/stma/workspace/lattrans_hyperstyle/logs_woID_new_5/checkpoint/l2m_Smiling.pth.tar',
     'Age':
-    '/home/stma/workspace/lattrans_hyperstyle/logs_woID_new_5/checkpoint/l2m_Young.pth.tar'
+    '/home/stma/workspace/lattrans_hyperstyle/logs_woID_new_5/checkpoint/l2m_Young.pth.tar',
 }
 data_paths = {
     'train_latent': '/mnt/pami23/stma/EXP/hyperstyle/hyperstyle_latents.pt',

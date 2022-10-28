@@ -33,7 +33,7 @@ ir_se50_path: '/mnt/pami23/stma/pretrained_models/model_ir_se50.pth'
 corr_threshold: 1
 lambda:
   re: 1
-  reg: 0
+  reg: 100
   un: 1
-  id: 0
   ort: 1
+  id: 0

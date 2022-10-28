@@ -17,6 +17,7 @@ from configs.path_config import model_paths, ckpt_paths, data_paths
 def main(opts):
     with torch.no_grad():
         device = 'cuda'
+        os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu
         DOLLnet = DOLL(style_dim=9216, ).to(device)
         state_dict = torch.load(opts.DOLL_model_path)
         '''state_dict = torch.load(
@@ -48,11 +49,14 @@ def main(opts):
         os.makedirs(edit_couple_path, exist_ok=True)
         print("out path:", edit_couple_path)
         for idx in tqdm(range(len(test_latents_list))):
-
-            w = torch.tensor(
-                torch.load(
-                    os.path.join(opts.test_latent_path,
-                                 test_latents_list[idx]))).to(device)
+            latent_name = os.path.join(opts.test_latent_path,
+                                       test_latents_list[idx])
+            postfix = os.path.splitext(latent_name)[1]
+            if postfix == '.npy':
+                w = torch.from_numpy(np.load(latent_name),
+                                     allow_pickle=True).to(device)
+            elif postfix == '.pt':
+                w = torch.tensor(torch.load(latent_name)).to(device)
             w = w.unsqueeze(0)
             weights_deltas = np.load(os.path.join(opts.test_weights_delta_path,
                                                   weights_list[idx]),
@@ -79,7 +83,6 @@ def main(opts):
                                    input_is_latent=True,
                                    randomize_noise=False,
                                    weights_deltas=sample_deltas)
-                x_1 = x_1.to('cpu')
                 res = torch.cat([res, x_1.data],
                                 dim=3) if not opts.no_origin else x_1.data
             img_name = os.path.splitext(test_latents_list[idx])[0]
@@ -135,6 +138,10 @@ if __name__ == '__main__':
     parser.add_argument('--no_origin',
                         action='store_true',
                         help='decide only output editing')
+    parser.add_argument('--gpu',
+                        type=str,
+                        default='0',
+                        help='use multiple gpus')
     opts = parser.parse_args()
 
     main(opts)

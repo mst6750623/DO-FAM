@@ -1,5 +1,5 @@
-from lattrans_hyperstyle.hyperstyle.configs import transforms_config
-from lattrans_hyperstyle.hyperstyle.configs.paths_config import dataset_paths
+import transforms_config
+from paths_config import dataset_paths
 
 
 DATASETS = {

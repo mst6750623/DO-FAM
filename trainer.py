@@ -1,9 +1,3 @@
-# Copyright (c) 2021, InterDigital R&D France. All rights reserved.
-#
-# This source code is made available under the license found in the
-# LICENSE.txt in the root directory of this source tree.
-
-# revised by stma 2022.9.28
 import os
 import numpy as np
 import torch
@@ -37,7 +31,7 @@ class Trainer(nn.Module):
         # Networks
 
         #DOLL module
-        self.DOLL = DOLL(img_size=256, style_dim=9216, max_conv_dim=512)
+        self.DOLL = DOLL(style_dim=9216)
         if self.opts.extra_init:
             self.init_params()
         # Latent Classifier
