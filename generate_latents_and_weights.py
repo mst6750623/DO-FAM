@@ -111,7 +111,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_dir',
                         type=str,
-                        default='./inference_logs/',
+                        default='./inference_out/',
                         help='Path to experiment output directory')
     parser.add_argument('--checkpoint_path',
                         default=ckpt_paths['hyperstyle'],
@@ -127,15 +127,12 @@ if __name__ == '__main__':
         help=
         'Whether to resize outputs to 256x256 or keep at original output resolution'
     )
-    parser.add_argument("--latents",
-                        action="store_true",
-                        help="infer the latent codes of the directory")
     parser.add_argument('--test_batch_size',
-                        default=8,
+                        default=2,
                         type=int,
                         help='Batch size for testing and inference')
     parser.add_argument('--test_workers',
-                        default=8,
+                        default=2,
                         type=int,
                         help='Number of test/inference dataloader workers')
     parser.add_argument(

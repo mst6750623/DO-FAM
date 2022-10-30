@@ -18,8 +18,14 @@ def main(opts):
     with torch.no_grad():
         device = 'cuda'
         os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu
+
+        edit_couple_path = os.path.join(opts.save_image_path, 'edit_couple')
+        os.makedirs(edit_couple_path, exist_ok=True)
+        print("out path:", edit_couple_path)
+
         DOLLnet = DOLL(style_dim=9216, ).to(device)
-        state_dict = torch.load(opts.DOLL_model_path)
+        DOLL_model_path = model_paths[opts.attribute]
+        state_dict = torch.load(DOLL_model_path)
         DOLLnet.load_state_dict(state_dict)
 
         generator = Generator(1024, 512, 8).to(device)
@@ -43,9 +49,6 @@ def main(opts):
         weights_list = [item for sublist in weights_list for item in sublist]
         weights_list.sort()
 
-        edit_couple_path = os.path.join(opts.save_image_path, 'edit_couple')
-        os.makedirs(edit_couple_path, exist_ok=True)
-        print("out path:", edit_couple_path)
         for idx in tqdm(range(len(test_latents_list))):
             latent_name = os.path.join(opts.test_latent_path,
                                        test_latents_list[idx])
@@ -103,30 +106,25 @@ if __name__ == '__main__':
                         type=str,
                         default=data_paths['test_weights_delta'],
                         help='test weights delta path')
-    # parser.add_argument('--label_file', type=str, default='./data/celebahq_anno.npy', help='label file path')
-    parser.add_argument('--label_file',
-                        type=str,
-                        default=data_paths['label_file'],
-                        help='label file path')
     parser.add_argument('--stylegan_model_path',
                         type=str,
                         default=ckpt_paths['hyperstyle'],
                         help='stylegan model path')
-    parser.add_argument('--DOLL_model_path',
-                        type=str,
-                        default=model_paths['Eyeglasses'],
-                        help='stylegan model path')
     parser.add_argument('--save_image_path',
                         type=str,
-                        default='./logs/',
+                        default='./test_data/',
                         help='validate save image path')
+    parser.add_argument('--attribute',
+                        type=str,
+                        default='Eyeglasses',
+                        help='Attribute to modify')
     parser.add_argument('--coeff_min',
                         type=float,
                         default=1,
                         help='coeff range for editing')
     parser.add_argument('--coeff_max',
                         type=float,
-                        default=2,
+                        default=5,
                         help='coeff range for editing')
     parser.add_argument('--step',
                         type=float,
