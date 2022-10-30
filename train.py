@@ -59,7 +59,6 @@ def main(opts):
         item for sublist in test_latents_list for item in sublist
     ]
     test_latents_list.sort()
-    #print("test_latents_list length:", test_latents_list[0])
     test_w = test_latents_list[:10]
 
     weights_list = [
@@ -131,8 +130,6 @@ if __name__ == '__main__':
                         type=str,
                         default='DOLL',
                         help='Path to the config file.')
-    # parser.add_argument('--latent_path', type=str, default='./data/celebahq_dlatents_psp.npy', help='dataset path')
-
     parser.add_argument('--latent_path',
                         type=str,
                         default=data_paths['train_latent'],

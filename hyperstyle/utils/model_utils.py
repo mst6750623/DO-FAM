@@ -5,9 +5,9 @@ import sys
 
 sys.path.extend(['.', '..'])
 
-from lattrans_hyperstyle.hyperstyle.models.stylegan2.model import Generator
-from lattrans_hyperstyle.hyperstyle.models.hyperstyle import HyperStyle
-from lattrans_hyperstyle.hyperstyle.models.encoders.e4e import e4e
+from ..models.stylegan2.model import Generator
+from ..models.hyperstyle import HyperStyle
+from ..models.encoders.e4e import e4e
 
 
 def load_model(checkpoint_path,

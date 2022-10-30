@@ -16,3 +16,7 @@ Note: when test, there is no need to use classifier, so you don't need to downlo
 Please download the test dataset(30 images with corresponding latent codes and weight deltas) in [this link](https://drive.google.com/drive/folders/1DkDyM_kHJrKjo4C37irwdrEWnZpNfK2C) and put them in ./test_data/
 
 ## Test on own images
+### Run inversion to get latent codes and weights deltas
+Step1.  Modify data_paths.test_image to your own image paths in ./configs/path_config.py.
+Step2. Run the following command to get the latent codes and weights of images:
+'python generate_latents_and_weights.py  --save_weight_deltas'

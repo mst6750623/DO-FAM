@@ -14,19 +14,14 @@ from tqdm import tqdm
 from hyperstyle.configs import data_configs
 from hyperstyle.datasets.inference_dataset import InferenceDataset
 from hyperstyle.utils.inference_utils import run_inversion
+from hyperstyle.utils.common import tensor2im
 from lattrans_hyperstyle.hyperstyle.utils.model_utils import load_model
 from configs.path_config import ckpt_paths, data_paths
 
 
 def run(test_opts):
-    out_path_results = os.path.join(test_opts.exp_dir, 'inference_results')
-    out_path_coupled = os.path.join(test_opts.exp_dir, 'inference_coupled')
-
-    os.makedirs(out_path_results, exist_ok=True)
-    os.makedirs(out_path_coupled, exist_ok=True)
-
-    os.makedirs(test_opts.latent_dir, exist_ok=True)
-
+    device = torch.device('cuda')
+    os.environ["CUDA_VISIBLE_DEVICES"] = test_opts.gpu
     # update test options with options used during training
     net, opts = load_model(test_opts.checkpoint_path, update_opts=test_opts)
 
@@ -48,7 +43,6 @@ def run(test_opts):
 
     global_i = 0
     global_time = []
-    all_latents = []
     for input_batch in tqdm(dataloader):
 
         if global_i >= opts.n_images:
@@ -57,27 +51,47 @@ def run(test_opts):
         with torch.no_grad():
             input_cuda = input_batch.cuda().float()
             tic = time.time()
-            result_batch, result_latents, result_deltas, _ = run_inversion(
-                input_cuda, net, opts, return_intermediate_results=False)
+            result_batch, result_latents, result_deltas = run_inversion(
+                input_cuda, net, opts, return_intermediate_results=True)
             toc = time.time()
             global_time.append(toc - tic)
-
+        resize_amount = (256, 256)
         for i in range(input_batch.shape[0]):
-
             im_path = dataset.paths[global_i]
 
-            if opts.latents:
-                im_name = extract_filename(im_path)
-                latent_dir = os.path.join(test_opts.exp_dir, "latent_codes")
-                os.makedirs(latent_dir, exist_ok=True)
-                latent_path = os.path.join(
-                    latent_dir, 'latent_code_%06d.npy' % int(im_name))
-                np.save(result_latents[i], latent_path)
+            #save imagesource
+            '''
+            results = [
+                tensor2im(result_batch[i][iter_idx])
+                for iter_idx in range(opts.n_iters_per_batch)
+            ]
+            im_path = dataset.paths[global_i]
+
+            input_im = tensor2im(input_batch[i])
+            res = np.array(input_im.resize(resize_amount))
+            for idx, result in enumerate(results):
+                res = np.concatenate(
+                    [res, np.array(result.resize(resize_amount))], axis=1)
+            # save coupled image with side-by-side results
+            couple_save_dir = os.path.join(test_opts.exp_dir, 'inference_couple')
+            os.makedirs(couple_save_dir,exist_ok=True)
+            Image.fromarray(res).save(
+                os.path.join(couple_save_dir,
+                             os.path.basename(im_path)))
+            '''
+            # save latent codes
+            im_name = extract_filename(im_path)
+            latent_dir = os.path.join(test_opts.exp_dir, "latent_codes")
+            os.makedirs(latent_dir, exist_ok=True)
+            latent_path = os.path.join(latent_dir,
+                                       'latent_code_%06d.pt' % int(im_name))
+            torch.save(result_latents[i][-1], latent_path)
 
             if opts.save_weight_deltas:
                 weight_deltas_dir = os.path.join(test_opts.exp_dir,
                                                  "weight_deltas")
                 os.makedirs(weight_deltas_dir, exist_ok=True)
+                #print(len(result_deltas[i][-1]), type(result_deltas[i][-1]))
                 np.save(
                     os.path.join(
                         weight_deltas_dir,
@@ -97,11 +111,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_dir',
                         type=str,
-                        default='./logs/',
-                        help='Path to experiment output directory')
-    parser.add_argument('--weight_dir',
-                        type=str,
-                        default=None,
+                        default='./inference_logs/',
                         help='Path to experiment output directory')
     parser.add_argument('--checkpoint_path',
                         default=ckpt_paths['hyperstyle'],
@@ -109,7 +119,7 @@ if __name__ == '__main__':
                         help='Path to HyperStyle model checkpoint')
     parser.add_argument('--data_path',
                         type=str,
-                        default='',
+                        default=data_paths['test_images'],
                         help='Path to directory of images to evaluate')
     parser.add_argument(
         '--resize_outputs',
@@ -148,9 +158,6 @@ if __name__ == '__main__':
         help='Number of forward passes per batch during training.')
 
     # arguments for loading pre-trained encoder
-    parser.add_argument('--load_w_encoder',
-                        action='store_true',
-                        help='Whether to load the w e4e encoder.')
     parser.add_argument('--w_encoder_checkpoint_path',
                         default=ckpt_paths["faces_w_encoder"],
                         type=str,
@@ -159,6 +166,9 @@ if __name__ == '__main__':
         '--w_encoder_type',
         default='WEncoder',
         help='Encoder type for the encoder used to get the initial inversion')
-
+    parser.add_argument('--gpu',
+                        type=str,
+                        default='0',
+                        help='use multiple gpus')
     opts = parser.parse_args()
-    run()
+    run(opts)

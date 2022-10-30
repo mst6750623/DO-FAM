@@ -20,6 +20,8 @@ model_paths = {
 data_paths = {
     'train_latent': '/mnt/pami23/stma/EXP/hyperstyle/hyperstyle_latents.pt',
     'train_weights_delta': '',
+    'test_images':
+    '/mnt/pami23/yfyuan/DATASET/celeba_hq/raw_images/test/images',
     'test_latent': '/mnt/pami23/yfyuan/EXP/LATENT/hyperstyle/celeba_hq_test/',
     'test_weights_delta':
     '/mnt/pami23/yfyuan/EXP/TEST_hyperstyle_rec_1024_save_weight/weight_deltas/',

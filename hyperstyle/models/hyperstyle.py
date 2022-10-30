@@ -26,6 +26,7 @@ class HyperStyle(nn.Module):
         self.face_pool = torch.nn.AdaptiveAvgPool2d((256, 256))
         # Load weights if needed
         self.load_weights()
+        print(self.opts)
         if self.opts.load_w_encoder:
             self.w_encoder.eval()
 
@@ -88,6 +89,7 @@ class HyperStyle(nn.Module):
             codes = x
         else:
             if y_hat is None:
+                print(self.opts)
                 assert self.opts.load_w_encoder, "Cannot infer latent code when e4e isn't loaded."
                 y_hat, codes = self.__get_initial_inversion(x, resize=True)
 

@@ -61,14 +61,6 @@ class LatentDataset(Dataset):
         self.labels = np.load(label_dir)
 
         #无validate
-        ''' train_len = int(0.9*len(labels))
-        if training_set:
-            self.dlatents = dlatents[:train_len] 
-            self.labels = labels[:train_len]
-            #self.process_score()
-        else:
-            self.dlatents = dlatents[train_len:]
-            self.labels = labels[train_len:]'''
 
         self.length = self.dlatents.shape[0]
         print(self.length)

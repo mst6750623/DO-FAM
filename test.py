@@ -20,10 +20,8 @@ def main(opts):
         os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu
         DOLLnet = DOLL(style_dim=9216, ).to(device)
         state_dict = torch.load(opts.DOLL_model_path)
-        '''state_dict = torch.load(
-            '/home/stma/workspace/lattrans_hyperstyle/logs/l2m/l2m_Eyeglasses.pth.tar'
-        )'''
         DOLLnet.load_state_dict(state_dict)
+
         generator = Generator(1024, 512, 8).to(device)
         generator_state_dict = torch.load(opts.stylegan_model_path,
                                           map_location='cpu')
@@ -97,7 +95,6 @@ def main(opts):
 if __name__ == '__main__':
     device = torch.device('cuda')
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--latent_path', type=str, default='./data/celebahq_dlatents_psp.npy', help='dataset path')
     parser.add_argument('--test_latent_path',
                         type=str,
                         default=data_paths['test_latent'],
@@ -125,7 +122,7 @@ if __name__ == '__main__':
                         help='validate save image path')
     parser.add_argument('--coeff_min',
                         type=float,
-                        default=1.3,
+                        default=1,
                         help='coeff range for editing')
     parser.add_argument('--coeff_max',
                         type=float,
@@ -137,7 +134,7 @@ if __name__ == '__main__':
                         help='coeff range step for editing')
     parser.add_argument('--no_origin',
                         action='store_true',
-                        help='decide only output editing')
+                        help='decide if only output editing')
     parser.add_argument('--gpu',
                         type=str,
                         default='0',

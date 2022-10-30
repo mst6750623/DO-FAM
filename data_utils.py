@@ -35,8 +35,8 @@ def log_input_image(x, opts):
     return tensor2im(x)
 
 
+# Clip image to range(0,1)
 def clip_img(x):
-    """Clip image to range(0,1)"""
     img_tmp = x.clone()[0]
     img_tmp = (img_tmp + 1) / 2
     img_tmp = torch.clamp(img_tmp, 0, 1)
