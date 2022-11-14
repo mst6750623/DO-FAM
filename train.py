@@ -21,34 +21,16 @@ def main(opts):
                   'Oval_Face': 25, 'Pale_Skin': 26, 'Pointy_Nose': 27, 'Receding_Hairline': 28, 'Rosy_Cheeks': 29, \
                   'Sideburns': 30, 'Smiling': 31, 'Straight_Hair': 32, 'Wavy_Hair': 33, 'Wearing_Earrings': 34, \
                   'Wearing_Hat': 35, 'Wearing_Lipstick': 36, 'Wearing_Necklace': 37, 'Wearing_Necktie': 38, 'Young': 39}'''
-    attr_dict = {
-        #'Arched_Eyebrows': 1,
-        #'Bald': 4,
-        #'Bangs': 5,
-        #'Black_Hair': 8,
-        #'Blond_Hair': 9,
-        #'Double_Chin': 14,
-        'Eyeglasses': 15,
-        #'Heavy_Makeup': 18,
-        'Male': 20,
-        #'Mouth_Slightly_Open': 21,
-        #'Mustache': 22,
-        #'Narrow_Eyes': 23,
-        #'No_Beard': 24,
-        #'Pale_Skin': 26,
-        'Smiling': 31,
-        #'Wearing_Lipstick': 36,
-        'Young': 39
-    }
-    device = torch.device('cuda')
-    os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu
+    attr_dict = {'Eyeglasses': 15, 'Male': 20, 'Smiling': 31, 'Young': 39}
+
+    torch.cuda.set_device(opts.gpu)
 
     log_dir = os.path.join(opts.log_path, 'checkpoint')
     os.makedirs(log_dir, exist_ok=True)
 
     config = yaml.load(open('./configs/' + opts.config + '.yaml', 'r'),
                        Loader=yaml.FullLoader)
-    attr_list = config['attr'].split(',')
+
     batch_size = config['batch_size']
     epochs = config['epochs']
 
@@ -80,7 +62,7 @@ def main(opts):
     print('log_path:', opts.log_path)
 
     test_w_temp = torch.tensor(
-        torch.load(os.path.join(opts.test_latent_path, test_w[0]))).to(device)
+        torch.load(os.path.join(opts.test_latent_path, test_w[0]))).cuda()
     weights_temp = np.load(os.path.join(opts.test_weights_delta_path,
                                         weights_list[0]),
                            allow_pickle=True)
@@ -94,14 +76,14 @@ def main(opts):
         trainer = Trainer(config, opts, attr_num, attr_name)
         trainer.initialize(opts.stylegan_model_path,
                            opts.classifier_model_path)
-        trainer.to(device)
+        trainer.cuda()
 
         for n_epoch in range(epochs):
             print(f'epoch: {n_epoch}')
             for n_iter, list_A in enumerate(tqdm(loader_A)):
 
                 w_A, label_A = list_A
-                w_A, label_A = w_A.to(device), label_A.to(device)
+                w_A, label_A = w_A.cuda(), label_A.cuda()
                 trainer.update(w_A, None, n_iter)
 
                 if (total_iter + 1) % config['log_iter'] == 0:
@@ -166,12 +148,6 @@ if __name__ == '__main__':
                         type=str,
                         default='',
                         help='checkpoint file path')
-    parser.add_argument('--gpu',
-                        type=str,
-                        default='0',
-                        help='use multiple gpus')
-    parser.add_argument('--extra_init',
-                        action='store_true',
-                        help='decide whether use param init or not')
+    parser.add_argument('--gpu', type=int, default=0, help='use gpu id')
     opts = parser.parse_args()
     main(opts)

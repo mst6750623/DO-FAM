@@ -57,13 +57,14 @@ class LatentDataset(Dataset):
         if postfix == '.npy':
             self.dlatents = np.load(latent_dir)
         elif postfix == '.pt':
-            self.dlatents = torch.load(latent_dir)
+            self.dlatents = torch.load(latent_dir,
+                                       map_location=torch.device('cpu'))
         self.labels = np.load(label_dir)
 
         #无validate
 
         self.length = self.dlatents.shape[0]
-        print(self.length)
+        print(self.length, self.labels.shape)
 
     def __len__(self):
         return self.length

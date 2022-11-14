@@ -32,8 +32,7 @@ class Trainer(nn.Module):
 
         #DOLL module
         self.DOLL = DOLL(style_dim=9216)
-        if self.opts.extra_init:
-            self.init_params()
+
         # Latent Classifier
         self.Latent_Classifier = LCNet([9216, 2048, 512, 40],
                                        activ='leakyrelu')
@@ -56,18 +55,6 @@ class Trainer(nn.Module):
             self.optimizer,
             step_size=config['step_size'],
             gamma=config['gamma'])
-
-    def init_params(self):
-        for param in self.DOLL.parameters():
-            if isinstance(param, nn.Conv2d):
-                nn.init.xavier_uniform_(param.weight.data)
-                nn.init.constant_(param.bias.data, 0.1)
-            elif isinstance(param, nn.BatchNorm2d):
-                param.weight.data.fill_(1)
-                param.bias.data.zero_()
-            elif isinstance(param, nn.Linear):
-                param.weight.data.normal_(0, 0.01)
-                param.bias.data.zero_()
 
     def initialize(self, stylegan_model_path, classifier_model_path):
         state_dict = torch.load(stylegan_model_path, map_location='cpu')

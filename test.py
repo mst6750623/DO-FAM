@@ -23,7 +23,7 @@ def main(opts):
         os.makedirs(edit_couple_path, exist_ok=True)
         print("out path:", edit_couple_path)
 
-        DOLLnet = DOLL(style_dim=9216, ).to(device)
+        DOLLnet = DOLL(style_dim=9216).to(device)
         DOLL_model_path = model_paths[opts.attribute]
         state_dict = torch.load(DOLL_model_path)
         DOLLnet.load_state_dict(state_dict)
@@ -117,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--attribute',
                         type=str,
                         default='Eyeglasses',
+                        choices=['Eyeglasses', 'Smiling', 'Gender', 'Age'],
                         help='Attribute to modify')
     parser.add_argument('--coeff_min',
                         type=float,

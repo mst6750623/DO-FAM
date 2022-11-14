@@ -20,11 +20,11 @@ from configs.path_config import ckpt_paths, data_paths
 
 
 def run(test_opts):
-    device = torch.device('cuda')
-    os.environ["CUDA_VISIBLE_DEVICES"] = test_opts.gpu
+
+    torch.cuda.set_device(test_opts.gpu)
     # update test options with options used during training
     net, opts = load_model(test_opts.checkpoint_path, update_opts=test_opts)
-
+    print(next(net.parameters()).device)
     print('Loading dataset for {}'.format(opts.dataset_type))
     dataset_args = data_configs.DATASETS[opts.dataset_type]
     transforms_dict = dataset_args['transforms'](opts).get_transforms()
@@ -163,9 +163,6 @@ if __name__ == '__main__':
         '--w_encoder_type',
         default='WEncoder',
         help='Encoder type for the encoder used to get the initial inversion')
-    parser.add_argument('--gpu',
-                        type=str,
-                        default='0',
-                        help='use multiple gpus')
+    parser.add_argument('--gpu', type=int, default=0, help='use multiple gpus')
     opts = parser.parse_args()
     run(opts)

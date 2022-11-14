@@ -55,7 +55,10 @@ class LCNet(nn.Module):
         for i in range(len(fmaps) - 1):
             in_channel = fmaps[i]
             out_channel = fmaps[i + 1]
-            self.fcs.append(nn.Linear(in_channel, out_channel, bias=True))
+            self.fcs.append(nn.Linear(in_channel, out_channel, bias=True),
+                            # nn.Dropout(0.5),
+                            )
+        print('new!')
         # Activation
         if activ == 'relu':
             self.activ = nn.ReLU()
